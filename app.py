@@ -353,19 +353,36 @@ def main():
                     with st.spinner("Detecting..."):
                         detect(image)
 
-        # ====== Video Upload ======
+        # ====== Video Upload ====== 
         elif upload_option == 'Upload Video':
             video_file = st.file_uploader("Upload a video", type=["mp4", "mov", "avi"])
+        
+            # Button to process the video
             if video_file and st.button("Process Video"):
                 with st.spinner("Processing..."):
                     video_path = uploadvideo(video_file)
                     if video_path:
-                        st.success("Video created!")
-                        with open(video_path, "rb") as f:
-                            st.video(f.read(), format="video/mp4")
-                        os.remove(video_path)
+                        st.session_state.video_path = video_path
+                        st.session_state.video_ready = True
                     else:
                         st.error("Failed to process video.")
+        
+            # Show the video if it's ready
+            if st.session_state.get("video_ready") and "video_path" in st.session_state:
+                st.success("Video created!")
+                with open(st.session_state.video_path, "rb") as f:
+                    st.video(f.read(), format="video/mp4")
+        
+                # Button to clear everything and reset
+                if st.button("🧹 Clear Everything"):
+                    try:
+                        os.remove(st.session_state.video_path)
+                    except Exception as e:
+                        st.warning(f"Could not remove file: {e}")
+                    for key in ["video_path", "video_ready"]:
+                        st.session_state.pop(key, None)
+                    st.rerun()
+
 
 
     elif choice == 'Contact developer':
