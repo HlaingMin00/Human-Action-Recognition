@@ -350,30 +350,17 @@ def main():
 
         # ====== Video Upload ======
         elif upload_option == 'Upload Video':
-            video_file = st.file_uploader('Upload a video', type=['mp4', 'mov', 'avi'])
-
-            if 'video_frames' not in st.session_state:
-                st.session_state.video_frames = None
-                st.session_state.fps = None
-                st.session_state.video_ready = False
-
+            video_file = st.file_uploader("Upload a video", type=["mp4", "mov", "avi"])
             if video_file and st.button("Process Video"):
-                with st.spinner("Processing video..."):
-                    frames, fps = uploadvideo(video_file)
-                    if frames:
-                        st.session_state.video_frames = frames
-                        st.session_state.fps = fps
-                        st.session_state.video_ready = True
+                with st.spinner("Processing..."):
+                    video_path = uploadvideo(video_file)
+                    if video_path:
+                        st.success("Video created!")
+                        with open(video_path, "rb") as f:
+                            st.video(f.read(), format="video/mp4")
+                        os.remove(video_path)
                     else:
                         st.error("Failed to process video.")
-
-            if st.session_state.video_ready:
-                with st.spinner("Rendering video..."):
-                    video_path = save_frames_to_video_imageio(st.session_state.video_frames, st.session_state.fps)
-                    st.success("Video created successfully!")
-                    with open(video_path, 'rb') as f:
-                        st.video(f.read(), format='video/mp4')
-                    os.remove(video_path)
 
     elif choice == 'Contact developer':
         contact()
