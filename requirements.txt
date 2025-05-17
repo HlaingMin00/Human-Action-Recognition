@@ -1,4 +1,4 @@
-python==3.10.13
+python==3.12.10
 streamlit==1.45.1
 tensorflow==2.18.0
 tensorflow-hub==0.16.1
