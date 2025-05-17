@@ -222,12 +222,14 @@ def detect(org_image):
     rgb_image = cv2.cvtColor(resized_img, cv2.COLOR_BGR2RGB)
     st.image(rgb_image, caption="Multiperson Action Recognition")
 
-def uploadvideo():
-    video_file = st.file_uploader('Upload video', type=['mp4', 'mov', 'avi'])
+def uploadvideo(video_file):
     frames = []
-    if video_file is not None:
-        st.write("Processing video... Please wait.")
 
+    if video_file is None:
+        return None, None
+
+    try:
+        # Save uploaded video to a temp file
         input_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         input_temp.write(video_file.read())
         input_temp.flush()
@@ -236,12 +238,13 @@ def uploadvideo():
         cap = cv2.VideoCapture(input_path)
         ret, first_frame = cap.read()
         if not ret:
-            st.error("Could not read the first frame.")
+            st.error("Could not read the first frame of the video.")
+            cap.release()
             return None, None
 
         fps = cap.get(cv2.CAP_PROP_FPS)
         if fps == 0 or np.isnan(fps):
-            fps = 24  # fallback default
+            fps = 24  # fallback
 
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
@@ -250,23 +253,27 @@ def uploadvideo():
             if not ret:
                 break
 
+            # TensorFlow frame preprocessing
             frame = tf.image.resize_with_pad(tf.expand_dims(org_frame, axis=0), 256, 256)
             frame = np.array(frame, dtype=np.uint8)
             input_img = tf.cast(frame, dtype=tf.int32)
             results = movenet(input_img)
             frame = np.squeeze(frame)
 
+            # Draw keypoints
             resized_img, _, _, _ = resize_to_square_with_padding(org_frame)
             loop_through_people(resized_img, frame, results, EDGES, 0.1)
 
+            # Ensure proper format
             resized_frame = cv2.cvtColor(resized_img, cv2.COLOR_RGB2BGR)
             frames.append(resized_frame)
 
         cap.release()
         return frames, fps
 
-    # Default return if no video uploaded
-    return None, None
+    except Exception as e:
+        st.error(f"Error processing video: {str(e)}")
+        return None, None
 
 def save_frames_to_video_imageio(frames, fps):
     # Create temporary file for video output
@@ -331,45 +338,61 @@ button[type=submit]:hover
 #     components.html(form_submit, height=500)
 
 def main():
-    menu=['Home Page','Contact developer']
-    # sidebarImg=Image.open('pic1.jpg')
-#     st.sidebar.image(sidebarImg)
-    choice=st.sidebar.selectbox('Menu',menu)
-    
+    menu = ['Home Page', 'Contact developer']
+    choice = st.sidebar.selectbox('Menu', menu)
+
     if choice == 'Home Page':
         st.header('Human Action Recognition')
-        upload_option = st.sidebar.selectbox("Photo Options ",('Upload Image📁','Shoot Photo📷','Upload Video'))
+        upload_option = st.sidebar.selectbox("Photo Options", ('Upload Image📁', 'Shoot Photo📷', 'Upload Video'))
+
+        # ====== Image Upload ======
         if upload_option == 'Upload Image📁':
             image = uploadPhoto()
             if st.button("Detect"):
                 if image is None:
-                    st.warning("Please Upload or Shoot photo before classifying")
+                    st.warning("Please upload or shoot a photo before classifying.")
                 else:
-                    st.success("Detecting photo in the model...\nPlease wait a second!")
-                    detect(image)
+                    with st.spinner("Detecting..."):
+                        detect(image)
+
+        # ====== Webcam Photo ======
         elif upload_option == 'Shoot Photo📷':
             image = takePhoto()
             if st.button("Detect"):
                 if image is None:
-                    st.warning("Please Upload or Shoot photo before classifying")
+                    st.warning("Please upload or shoot a photo before classifying.")
                 else:
-                    st.success("Detecting photo in the model...\nPlease wait a second!")
-                    detect(image)
-            
+                    with st.spinner("Detecting..."):
+                        detect(image)
+
+        # ====== Video Upload ======
         elif upload_option == 'Upload Video':
-            frames, fps = uploadvideo()
-            if frames is not None:
-                video_path = save_frames_to_video_imageio(frames, fps)
-                st.success("Video created successfully!")
-                with open(video_path, 'rb') as f:
-                    st.video(f.read(),format='video/mp4')
+            video_file = st.file_uploader('Upload a video', type=['mp4', 'mov', 'avi'])
 
-                os.remove(video_path)
-            else:
-                st.warning("Please upload a video.")
+            if 'video_frames' not in st.session_state:
+                st.session_state.video_frames = None
+                st.session_state.fps = None
+                st.session_state.video_ready = False
 
-                           
-    if choice == 'Contact developer':
+            if video_file and st.button("Process Video"):
+                with st.spinner("Processing video..."):
+                    frames, fps = uploadvideo(video_file)
+                    if frames:
+                        st.session_state.video_frames = frames
+                        st.session_state.fps = fps
+                        st.session_state.video_ready = True
+                    else:
+                        st.error("Failed to process video.")
+
+            if st.session_state.video_ready:
+                with st.spinner("Rendering video..."):
+                    video_path = save_frames_to_video_imageio(st.session_state.video_frames, st.session_state.fps)
+                    st.success("Video created successfully!")
+                    with open(video_path, 'rb') as f:
+                        st.video(f.read(), format='video/mp4')
+                    os.remove(video_path)
+
+    elif choice == 'Contact developer':
         contact()
 
 if __name__ =='__main__':
