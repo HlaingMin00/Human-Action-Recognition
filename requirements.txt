@@ -2,7 +2,6 @@ streamlit
 tensorflow
 tensorflow-hub
 numpy
-opencv-python
 pandas
 scikit-learn
 imageio
