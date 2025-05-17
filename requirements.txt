@@ -5,4 +5,5 @@ numpy
 pandas
 scikit-learn
 imageio
+imageio[ffmpeg]
 opencv-python-headless
