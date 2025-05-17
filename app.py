@@ -227,7 +227,7 @@ def uploadvideo(video_file):
         return None
 
     try:
-        # Save uploaded file to disk
+        # Save the uploaded file to disk
         input_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         input_temp.write(video_file.read())
         input_temp.flush()
@@ -246,9 +246,10 @@ def uploadvideo(video_file):
 
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        # Create a temp output file
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        writer = imageio.get_writer(output_path, fps=fps, codec='libx264', quality=8)
 
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
@@ -257,7 +258,7 @@ def uploadvideo(video_file):
             if not ret:
                 break
 
-            # TF processing
+            # TensorFlow preprocessing
             frame = tf.image.resize_with_pad(tf.expand_dims(org_frame, axis=0), 256, 256)
             frame = np.array(frame, dtype=np.uint8)
             input_img = tf.cast(frame, dtype=tf.int32)
@@ -268,18 +269,22 @@ def uploadvideo(video_file):
             resized_img, _, _, _ = resize_to_square_with_padding(org_frame)
             loop_through_people(resized_img, frame, results, EDGES, 0.1)
 
-            # Convert to BGR and write
-            resized_frame = cv2.cvtColor(resized_img, cv2.COLOR_RGB2BGR)
-            resized_frame = cv2.resize(resized_frame, (width, height))  # ensure matching size
-            out.write(resized_frame)
+            # Ensure format for imageio
+            resized_img = resized_img.astype(np.uint8)
+            if resized_img.shape[2] == 3:
+                resized_img = cv2.cvtColor(resized_img, cv2.COLOR_RGB2BGR)
+
+            writer.append_data(resized_img)
 
         cap.release()
-        out.release()
+        writer.close()
+
         return output_path
 
     except Exception as e:
         st.error(f"Error processing video: {str(e)}")
         return None
+
 
 def contact():
     st.write('Write to the developer')
@@ -361,6 +366,7 @@ def main():
                         os.remove(video_path)
                     else:
                         st.error("Failed to process video.")
+
 
     elif choice == 'Contact developer':
         contact()
