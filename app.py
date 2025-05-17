@@ -341,6 +341,12 @@ def main():
         upload_option = st.sidebar.selectbox("Photo Options ",('Upload Image📁','Shoot Photo📷','Upload Video'))
         if upload_option == 'Upload Image📁':
             image = uploadPhoto()
+            if st.button("Detect"):
+                if image is None:
+                    st.warning("Please Upload or Shoot photo before classifying")
+                else:
+                    st.success("Detecting photo in the model...\nPlease wait a second!")
+                    detect(image)
         elif upload_option == 'Shoot Photo📷':
             image = takePhoto()
             if st.button("Detect"):
