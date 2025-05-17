@@ -223,13 +223,11 @@ def detect(org_image):
     st.image(rgb_image, caption="Multiperson Action Recognition")
 
 def uploadvideo(video_file):
-    frames = []
-
     if video_file is None:
-        return None, None
+        return None
 
     try:
-        # Save uploaded video to a temp file
+        # Save uploaded file to disk
         input_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
         input_temp.write(video_file.read())
         input_temp.flush()
@@ -238,13 +236,19 @@ def uploadvideo(video_file):
         cap = cv2.VideoCapture(input_path)
         ret, first_frame = cap.read()
         if not ret:
-            st.error("Could not read the first frame of the video.")
+            st.error("Could not read the first frame.")
             cap.release()
-            return None, None
+            return None
 
         fps = cap.get(cv2.CAP_PROP_FPS)
         if fps == 0 or np.isnan(fps):
-            fps = 24  # fallback
+            fps = 24  # fallback default
+
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
@@ -253,7 +257,7 @@ def uploadvideo(video_file):
             if not ret:
                 break
 
-            # TensorFlow frame preprocessing
+            # TF processing
             frame = tf.image.resize_with_pad(tf.expand_dims(org_frame, axis=0), 256, 256)
             frame = np.array(frame, dtype=np.uint8)
             input_img = tf.cast(frame, dtype=tf.int32)
@@ -264,39 +268,18 @@ def uploadvideo(video_file):
             resized_img, _, _, _ = resize_to_square_with_padding(org_frame)
             loop_through_people(resized_img, frame, results, EDGES, 0.1)
 
-            # Ensure proper format
+            # Convert to BGR and write
             resized_frame = cv2.cvtColor(resized_img, cv2.COLOR_RGB2BGR)
-            frames.append(resized_frame)
+            resized_frame = cv2.resize(resized_frame, (width, height))  # ensure matching size
+            out.write(resized_frame)
 
         cap.release()
-        return frames, fps
+        out.release()
+        return output_path
 
     except Exception as e:
         st.error(f"Error processing video: {str(e)}")
-        return None, None
-
-def save_frames_to_video_imageio(frames, fps):
-    # Create temporary file for video output
-    output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-    
-    # Ensure all frames are RGB uint8 and same size
-    frames_fixed = []
-    target_size = (frames[0].shape[1], frames[0].shape[0])  # (width, height)
-
-    for frame in frames:
-        # Convert float or grayscale if needed
-        if frame.dtype != np.uint8:
-            frame = (frame * 255).astype(np.uint8) if frame.max() <= 1.0 else frame.astype(np.uint8)
-        if len(frame.shape) == 2:  # grayscale
-            frame = np.stack([frame]*3, axis=-1)
-        if frame.shape[:2] != (target_size[1], target_size[0]):
-            frame = cv2.resize(frame, target_size)
-        frames_fixed.append(frame)
-
-    # Write video using imageio
-    imageio.mimwrite(output_path, frames_fixed, fps=fps, codec='libx264', quality=8, macro_block_size=None)
-
-    return output_path
+        return None
 
 def contact():
     st.write('Write to the developer')
