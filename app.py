@@ -56,6 +56,32 @@ def detect_keypoints(image):
     keypoints = outputs["output_0"].numpy()
     return keypoints
 
+def draw_action_summary(frame, num_people):
+    frame_height, frame_width, _ = frame.shape  # Get frame dimensions
+
+    # Define box size proportional to frame size
+    box_width = int(frame_width * 0.2)  # 20% of frame width
+    box_height = int(frame_height * 0.05)  # 5% of frame height
+
+    # Set fixed padding & position (top-left corner)
+    padding = int(box_height * 0.2)
+    box_x, box_y = padding, padding
+
+    # Dynamically adjust text size
+    font_scale = min(frame_width, frame_height) * 0.001  # Scale based on frame size
+    text_thickness = max(1, int(font_scale * 3))  # Ensure minimum thickness
+
+    # Draw background rectangle
+    cv2.rectangle(frame, (box_x, box_y), (box_x + box_width, box_y + box_height), (50, 50, 50), -1)
+
+    # Position text inside the box
+    text_x = box_x + padding
+    text_y = box_y + int(box_height * 0.7)  # Centered vertically in box
+
+    # Display number of people detected
+    cv2.putText(frame, f"People: {num_people}", (text_x, text_y),
+                cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), text_thickness, cv2.LINE_AA)
+    
 # Store previous class index per person
 last_class_index = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
@@ -98,8 +124,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
 
         cv2.putText(image, action_label, label_pos,
                         cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
-    cv2.putText(frame, f"Person: {num_people}", (50,50)
-                cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 3.5, cv2.LINE_AA)
+    draw_action_summary(image,num_people)
 
 # User upload
 uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
