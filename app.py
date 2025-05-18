@@ -150,14 +150,15 @@ if uploaded_file is not None:
         # Save uploaded video to a temp file
         tfile = tempfile.NamedTemporaryFile(delete=False)
         tfile.write(uploaded_file.read())
-
+        frame_count=0
         if st.button("Process Video"):
             with st.spinner("Processing..."):
                 cap = cv2.VideoCapture(tfile.name)
                 while cap.isOpened():
                     ret, frame = cap.read()
-                    if not ret:
-                        break
+                    frame_count=+1
+                    if frame_count % 2 != 0:
+                        continue
                     image_rgb= np.array(frame)
                     image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
                     keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
