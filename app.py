@@ -82,11 +82,37 @@ def draw_action_summary(frame, num_people):
     cv2.putText(frame, f"Person: {num_people}", (text_x, text_y),
                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), text_thickness, cv2.LINE_AA)
     
+class TemporalSmoother:
+    def __init__(self):
+        self.last_class = None
+        self.candidate_class = None
+
+    def smooth(self, current_class):
+        if self.last_class is None:
+            self.last_class = current_class
+            return current_class
+
+        if current_class == self.last_class:
+            self.candidate_class = None
+            return self.last_class
+
+        if self.candidate_class is None:
+            self.candidate_class = current_class
+            return self.last_class
+
+        if current_class == self.candidate_class:
+            self.last_class = current_class
+            self.candidate_class = None
+            return current_class
+        else:
+            self.candidate_class = current_class
+            return self.last_class
+            
 # Store previous class index per person
-last_class_index = {}
+smoothers = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
 def har_on_person(image,keypoints,confidence_threshold=0.1):
-    global last_class_index
+    global smoothers
     h,w,_=image.shape
     num_people=0
     for i, person_data in enumerate(keypoints[0]):
@@ -104,17 +130,12 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
 
-        # Compare with previous index
-        if i not in last_class_index:
-            last_class_index[i] = current_index
-        elif last_class_index[i] != current_index:
-            current_index = last_class_index[i]  # fallback to previous
-        else:
-            last_class_index[i] = current_index  # confirmed update
-
-        # Draw the action label using index
-        action_label = class_names[current_index]
-
+        # Use temporal smoother per person
+        if i not in smoothers:
+            smoothers[i] = TemporalSmoother()
+        smoothed_index = smoothers[i].smooth(current_index)
+        action_label = class_names[smoothed_index]
+        
         box_height = ymax - ymin
         font_scale = max(0.7, min(3, box_height / 150))
         thickness = max(2, int(font_scale * 1.5))
