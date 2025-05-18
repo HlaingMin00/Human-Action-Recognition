@@ -160,13 +160,12 @@ if uploaded_file is not None:
                         break
                     frame_count=+1
                     if frame_count % 2 != 0:
-                        continue
-                    image_rgb= np.array(frame)
-                    image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
-                    keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-                    image_rgb = resize_with_pad(image_rgb)
-                    har_on_person(image_rgb,keypoints)
-                    writer.append_data(image_rgb)
+                        image_rgb= np.array(frame)
+                        image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
+                        keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
+                        image_rgb = resize_with_pad(image_rgb)
+                        har_on_person(image_rgb,keypoints)
+                        writer.append_data(image_rgb)
                 cap.release()
                 writer.close()
                 if output_path:
