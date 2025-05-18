@@ -5,6 +5,8 @@ import numpy as np
 import cv2
 from PIL import Image
 import tempfile
+import imageio
+import os
 
 st.title("🧍‍♂️ Human Action Recognition with MoveNet + HAR Model")
 
@@ -21,23 +23,81 @@ def load_models():
 
 movenet_model, har_model = load_models()
 
+def resize_with_pad(image, target_size=512, pad_color=(255, 255, 255)):
+    h, w = image.shape[:2]
+    scale = target_size / max(h, w)
+
+    new_w, new_h = int(w * scale), int(h * scale)
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+
+    # Padding calculations
+    delta_w = target_size - new_w
+    delta_h = target_size - new_h
+    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+    left, right = delta_w // 2, delta_w - (delta_w // 2)
+
+    # Pad and return
+    padded_image = cv2.copyMakeBorder(
+        resized, top, bottom, left, right,
+        cv2.BORDER_CONSTANT, value=pad_color
+    )
+    return padded_image
+
 # Helper to run MoveNet
 def detect_keypoints(image):
-    input_img = tf.image.resize_with_pad(image, 256, 256)
-    input_img = tf.cast(input_img, dtype=tf.int32)
-    input_img = tf.expand_dims(input_img, axis=0)
+    # input_img = tf.image.resize_with_pad(image, 256, 256)
+    # input_img = tf.cast(input_img, dtype=tf.int32)
+    # input_img = tf.expand_dims(input_img, axis=0)
+    frame = tf.image.resize_with_pad(tf.expand_dims(image, axis=0), 256, 256)
+    frame = np.array(frame, dtype=np.uint8)
+    input_img = tf.cast(frame, dtype=tf.int32)
 
     outputs = movenet_model(input_img)
     keypoints = outputs["output_0"].numpy()
     return keypoints
 
-# Helper to preprocess frame for HAR
-def extract_pose_sequence(keypoints):
-    # Get only keypoints for first person (shape: 1x6x56 -> we want 17x3)
-    person_keypoints = keypoints[0][0][:17]  # (17, 3) = x, y, confidence
-    xy_only = person_keypoints[:, :2]  # (17, 2)
-    xy_only = xy_only.reshape(1, 17, 2)  # Add batch dimension
-    return xy_only
+# Store previous class index per person
+last_class_index = {}
+class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
+def har_on_person(image,keypoints,confidence_threshold=0.05):
+    global last_class_index
+    h,w,_=image.shape
+    num_people=0
+    for i, person_data in enumerate(keypoints[0]):
+        bbox = person_data[51:]
+        if bbox[4] < confidence_threshold:
+            continue
+        num_people += 1
+        ymin = int(bbox[0] * h)
+        xmin = int(bbox[1] * w)
+        ymax = int(bbox[2] * h)
+        xmax = int(bbox[3] * w)
+        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+
+        model_input = person_data[:51].reshape(17, 3)[:, :2].flatten().reshape(1, 34)
+        prediction = har_model.predict(model_input)
+        current_index = int(np.argmax(prediction))
+
+        # Compare with previous index
+        if i not in last_class_index:
+            last_class_index[i] = current_index
+        elif last_class_index[i] != current_index:
+            current_index = last_class_index[i]  # fallback to previous
+        else:
+            last_class_index[i] = current_index  # confirmed update
+
+        # Draw the action label using index
+        action_label = class_names[current_index]
+
+        box_height = ymax - ymin
+        font_scale = max(0.7, min(3, box_height / 150))
+        thickness = max(2, int(font_scale * 1.5))
+        label_x = xmin
+        label_y = max(ymin - 10, 15)
+        label_pos = (label_x, label_y)
+
+        cv2.putText(image, action_label, label_pos,
+                        cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
 
 # User upload
 uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
@@ -46,38 +106,57 @@ if uploaded_file is not None:
     if uploaded_file.type.startswith("image"):
         # Handle image input
         image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Uploaded Image", use_column_width=True)
+        st.image(image, caption="Uploaded Image")
 
         # Convert image to tensor
         image_np = np.array(image)
+        image_np = resize_with_pad(image_np)
         keypoints = detect_keypoints(tf.convert_to_tensor(image_np))
-
-        pose_seq = extract_pose_sequence(keypoints)
-        prediction = har_model.predict(pose_seq)
-        predicted_class = np.argmax(prediction)
-
-        st.success(f"🧠 Predicted Action Class: {predicted_class}")
+        har_on_person(image_np,keypoints)
+        st.image(image_np, caption="Multiperson Action Recognition")
 
     elif uploaded_file.type.startswith("video"):
         # Save uploaded video to a temp file
+        output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+        writer = imageio.get_writer(output_path, fps=27, codec='libx264', quality=8)
+
+        # Save uploaded video to a temp file
         tfile = tempfile.NamedTemporaryFile(delete=False)
         tfile.write(uploaded_file.read())
-        cap = cv2.VideoCapture(tfile.name)
 
-        stframe = st.empty()
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-            pose_seq = extract_pose_sequence(keypoints)
-            prediction = har_model.predict(pose_seq)
-            predicted_class = np.argmax(prediction)
-
-            label = f"Action: {predicted_class}"
-            cv2.putText(frame, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            stframe.image(frame, channels="BGR", use_column_width=True)
-
-        cap.release()
+        if st.button("Process Video"):
+            with st.spinner("Processing..."):
+                cap = cv2.VideoCapture(tfile.name)
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    image_rgb= np.array(frame)
+                    image_rgb = resize_with_pad(image_rgb)
+                    image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
+                    keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
+                    har_on_person(image_rgb,keypoints)
+                    writer.append_data(image_rgb)
+                cap.release()
+                writer.close()
+                if output_path:
+                    st.session_state.video_path = output_path
+                    st.session_state.video_ready = True
+                else:
+                    st.error("Failed to process video.")
+    
+        # Show the video if it's ready
+        if st.session_state.get("video_ready") and "video_path" in st.session_state:
+            st.success("Video created!")
+            with open(st.session_state.video_path, "rb") as f:
+                st.video(f.read(), format="video/mp4")
+    
+            # Button to clear everything and reset
+            if st.button("🧹 Clear Everything"):
+                try:
+                    os.remove(st.session_state.output_path)
+                except Exception as e:
+                    st.warning(f"Could not remove file: {e}")
+                for key in ["video_path", "video_ready"]:
+                    st.session_state.pop(key, None)
+                st.rerun()
