@@ -134,7 +134,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         if i not in smoothers:
             smoothers[i] = TemporalSmoother()
         smoothed_index = smoothers[i].smooth(current_index)
-        action_label = class_names[smoothed_index]
+        action_label = class_names[current_index]
         
         box_height = ymax - ymin
         font_scale = max(0.7, min(3, box_height / 150))
