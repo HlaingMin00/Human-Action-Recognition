@@ -85,7 +85,7 @@ def draw_action_summary(frame, num_people):
 # Store previous class index per person
 last_class_index = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-def har_on_person(image,keypoints,confidence_threshold=0.1):
+def har_on_person(image,keypoints,confidence_threshold=0.2):
     global last_class_index
     h,w,_=image.shape
     num_people=0
