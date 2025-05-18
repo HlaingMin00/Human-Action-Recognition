@@ -8,8 +8,12 @@ import tempfile
 import os
 import imageio
 
-model = hub.load('https://tfhub.dev/google/movenet/multipose/lightning/1')
-movenet = model.signatures['serving_default']
+@st.cache_resource
+def load_movenet():
+    model = hub.load("https://tfhub.dev/google/movenet/multipose/lightning/1")
+    return model.signatures['serving_default']
+
+movenet = load_movenet()  # ✅ Load once
 
 EDGES = {
     (0, 1): 'm',
