@@ -45,12 +45,12 @@ def resize_with_pad(image, target_size=512, pad_color=(255, 255, 255)):
 
 # Helper to run MoveNet
 def detect_keypoints(image):
-    # input_img = tf.image.resize_with_pad(image, 256, 256)
-    # input_img = tf.cast(input_img, dtype=tf.int32)
-    # input_img = tf.expand_dims(input_img, axis=0)
-    frame = tf.image.resize_with_pad(tf.expand_dims(image, axis=0), 256, 256)
-    frame = np.array(frame, dtype=np.uint8)
-    input_img = tf.cast(frame, dtype=tf.int32)
+    input_img = tf.image.resize_with_pad(image, 256, 256)
+    input_img = tf.cast(input_img, dtype=tf.int32)
+    input_img = tf.expand_dims(input_img, axis=0)
+    # frame = tf.image.resize_with_pad(tf.expand_dims(image, axis=0), 256, 256)
+    # frame = np.array(frame, dtype=np.uint8)
+    # input_img = tf.cast(frame, dtype=tf.int32)
 
     outputs = movenet_model(input_img)
     keypoints = outputs["output_0"].numpy()
@@ -79,7 +79,7 @@ def draw_action_summary(frame, num_people):
     text_y = box_y + int(box_height * 0.7)  # Centered vertically in box
 
     # Display number of people detected
-    cv2.putText(frame, f"People: {num_people}", (text_x, text_y),
+    cv2.putText(frame, f"Person: {num_people}", (text_x, text_y),
                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), text_thickness, cv2.LINE_AA)
     
 # Store previous class index per person
