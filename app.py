@@ -33,8 +33,11 @@ def detect_keypoints(image):
 
 # Helper to preprocess frame for HAR
 def extract_pose_sequence(keypoints):
-    # Simplify: Extract keypoint coordinates (exclude confidence for now)
-    return keypoints[..., :2].reshape(1, -1, 2)
+    # Get only keypoints for first person (shape: 1x6x56 -> we want 17x3)
+    person_keypoints = keypoints[0][0][:17]  # (17, 3) = x, y, confidence
+    xy_only = person_keypoints[:, :2]  # (17, 2)
+    xy_only = xy_only.reshape(1, 17, 2)  # Add batch dimension
+    return xy_only
 
 # User upload
 uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
