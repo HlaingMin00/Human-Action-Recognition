@@ -110,8 +110,8 @@ if uploaded_file is not None:
 
         # Convert image to tensor
         image_np = np.array(image)
-        image_np = resize_with_pad(image_np)
         keypoints = detect_keypoints(tf.convert_to_tensor(image_np))
+        image_np = resize_with_pad(image_np)
         har_on_person(image_np,keypoints)
         st.image(image_np, caption="Multiperson Action Recognition")
 
@@ -132,9 +132,9 @@ if uploaded_file is not None:
                     if not ret:
                         break
                     image_rgb= np.array(frame)
-                    image_rgb = resize_with_pad(image_rgb)
                     image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
                     keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
+                    image_rgb = resize_with_pad(image_rgb)
                     har_on_person(image_rgb,keypoints)
                     writer.append_data(image_rgb)
                 cap.release()
