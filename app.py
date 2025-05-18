@@ -98,7 +98,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
 
         cv2.putText(image, action_label, label_pos,
                         cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
-    cv2.putText(frame, f"Person: {num_people}", (10,10)
+    cv2.putText(frame, f"Person: {num_people}", (50,50)
                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 3.5, cv2.LINE_AA)
 
 # User upload
