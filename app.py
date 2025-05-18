@@ -156,6 +156,8 @@ if uploaded_file is not None:
                 cap = cv2.VideoCapture(tfile.name)
                 while cap.isOpened():
                     ret, frame = cap.read()
+                    if not ret:
+                        break
                     frame_count=+1
                     if frame_count % 2 != 0:
                         continue
