@@ -59,7 +59,7 @@ def detect_keypoints(image):
 # Store previous class index per person
 last_class_index = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-def har_on_person(image,keypoints,confidence_threshold=0.3):
+def har_on_person(image,keypoints,confidence_threshold=0.1):
     global last_class_index
     h,w,_=image.shape
     num_people=0
