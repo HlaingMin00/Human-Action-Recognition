@@ -84,7 +84,41 @@ def draw_action_summary(frame, num_people):
                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), text_thickness, cv2.LINE_AA)
 
 # Store previous class index per person
+# Track per-person state
 last_class_index = {}
+pending_class_index = {}
+repeat_count = {}
+
+def get_stable_action(i, current_index, required_repeats=1):
+    """
+    Handles action stability for a given person ID (i) based on current prediction.
+    Returns the action index to display.
+    """
+    if i not in last_class_index:
+        last_class_index[i] = current_index
+        pending_class_index[i] = current_index
+        repeat_count[i] = 0
+        return current_index
+
+    if current_index == last_class_index[i]:
+        # Same as last confirmed → reset
+        repeat_count[i] = 0
+        pending_class_index[i] = current_index
+        return current_index
+
+    if current_index == pending_class_index[i]:
+        # Second time seeing this new class
+        repeat_count[i] += 1
+        if repeat_count[i] >= required_repeats:
+            last_class_index[i] = current_index
+            repeat_count[i] = 0
+        return last_class_index[i]
+
+    # New class seen first time
+    pending_class_index[i] = current_index
+    repeat_count[i] = 1
+    return last_class_index[i]
+
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
 def har_on_person(image,keypoints,confidence_threshold=0.1):
     global last_class_index
@@ -104,23 +138,10 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         model_input = person_data[:51].reshape(17, 3)[:, :2].flatten().reshape(1, 34)
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
-        st.write(current_index)
 
-        box_height = ymax - ymin
-        font_scale = max(0.7, min(3, box_height / 150))
-        thickness = max(2, int(font_scale * 1.5))
-        label_x = xmin
-        label_y = max(ymin - 10, 15)
-        label_pos = (label_x, label_y)
-        
-        # Compare with previous index
-        if i not in last_class_index:
-            last_class_index[i] = current_index
-        elif last_class_index[i] != current_index:
-            cv2.putText(image,class_names[last_class_index[i]], label_pos, cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
-            last_class_index[i] = current_index  # confirmed update
-        else:
-            cv2.putText(image, class_names[current_index], label_pos,
+        action_index = get_stable_action(i, current_index)
+        label = class_names[action_index]
+            cv2.putText(image, label, label_pos,
                             cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
     draw_action_summary(image,num_people)
 
