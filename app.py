@@ -88,7 +88,7 @@ def draw_action_summary(frame, num_people):
 last_class_index = {}
 pending_class_index = {}
 repeat_count = {}
-def get_stable_action(i, current_index, required_repeats=3):
+def get_stable_action(i, current_index, required_repeats=5):
     """
     Handles action stability for a given person ID (i) based on current prediction.
     Returns the action index to display.
