@@ -126,7 +126,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
     for i, person_data in enumerate(keypoints[0]):
         bbox = person_data[51:]
         conf = person_data[:51].reshape(17, 3)[:, 2]
-        if bbox[4] < confidence_threshold or np.mean(conf) < 0.5:
+        if bbox[4] < confidence_threshold or np.mean(conf) < 0.3:
             continue
         num_people += 1
         ymin = int(bbox[0] * h)
