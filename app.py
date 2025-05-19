@@ -7,6 +7,7 @@ from PIL import Image
 import tempfile
 import imageio
 import os
+import ffmpeg
 
 st.title("🧍‍♂️ Human Action Recognition with MoveNet + HAR Model")
 
@@ -108,51 +109,17 @@ class TemporalSmoother:
             self.candidate_class = current_class
             return self.last_class
 
-import ffmpeg
-import tempfile
-import os
-
-import ffmpeg
-import tempfile
-import os
-
-def apply_rotation_if_needed(input_path):
-    # Check for rotation metadata
+def get_video_rotation(path):
+    """Get rotation metadata using ffmpeg."""
     try:
-        probe = ffmpeg.probe(input_path)
-        for stream in probe['streams']:
-            if stream['codec_type'] == 'video':
-                rotate_tag = stream.get('tags', {}).get('rotate', '0')
-                rotation = int(rotate_tag)
-                break
-        else:
-            rotation = 0
+        probe = ffmpeg.probe(path)
+        rotation = int(
+            probe['streams'][0]['tags'].get('rotate', 0)
+        )
+        return rotation
     except Exception as e:
-        rotation = 0
-
-    if rotation == 0:
-        return input_path  # No fix needed
-
-    # Map FFmpeg transpose filter to rotation
-    transpose_filter = {
-        90: "transpose=1",
-        180: "transpose=1,transpose=1",
-        270: "transpose=2"
-    }.get(rotation)
-
-    if not transpose_filter:
-        return input_path
-
-    # Create corrected video
-    corrected_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-    ffmpeg.input(input_path).output(
-        corrected_path,
-        vf=transpose_filter,
-        vcodec="libx264",
-        metadata='rotate=0'
-    ).run(overwrite_output=True)
-
-    return corrected_path
+        print(f"Error reading metadata: {e}")
+        return 0
 
 # Store previous class index per person
 smoothers = {}
@@ -220,8 +187,9 @@ if uploaded_file is not None:
         frame_count=0
         if st.button("Process Video"):
             with st.spinner("Processing..."):
-                input_path = apply_rotation_if_needed(tfile.name)
-                cap = cv2.VideoCapture(input_path)
+                r = get_video_rotation(tfile.name)
+                st.write(r)
+                cap = cv2.VideoCapture(tfile.name)
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
