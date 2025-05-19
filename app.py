@@ -137,6 +137,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         model_input = person_data[:51].reshape(17, 3)[:, :2].flatten().reshape(1, 34)
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
+        st.write(current_index)
 
         box_height = ymax - ymin
         font_scale = max(0.7, min(3, box_height / 150))
