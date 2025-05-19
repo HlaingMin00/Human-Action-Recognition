@@ -109,20 +109,27 @@ class TemporalSmoother:
             self.candidate_class = current_class
             return self.last_class
 
+import ffmpeg
+
 def get_video_rotation(path):
-    """Get rotation metadata from the video stream using ffmpeg."""
+    """
+    Check if video has rotation metadata and return it.
+    Returns:
+        int: rotation angle (0 if not present)
+    """
     try:
         probe = ffmpeg.probe(path)
         for stream in probe['streams']:
             if stream['codec_type'] == 'video':
-                tags = stream.get('tags', {})
-                rotation = int(tags.get('rotate', 0))
-                return rotation
+                rotate_tag = stream.get('tags', {}).get('rotate')
+                if rotate_tag:
+                    print(f"Rotation metadata found: {rotate_tag}°")
+                    return int(rotate_tag)
+        print("No rotation metadata found.")
         return 0
     except Exception as e:
-        print(f"Error reading metadata: {e}")
+        print(f"Error: {e}")
         return 0
-
 
 # Store previous class index per person
 smoothers = {}
