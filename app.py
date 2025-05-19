@@ -107,7 +107,43 @@ class TemporalSmoother:
         else:
             self.candidate_class = current_class
             return self.last_class
-            
+
+import ffmpeg
+import tempfile
+import os
+
+def fix_video_orientation(input_file):
+    # Use FFmpeg to check metadata
+    try:
+        probe = ffmpeg.probe(input_file)
+        tags = probe['streams'][0].get('tags', {})
+        rotation = int(tags.get('rotate', 0))
+    except Exception as e:
+        rotation = 0  # default to 0 if no metadata
+
+    if rotation == 0:
+        return input_file  # no correction needed
+
+    # Set FFmpeg transpose filter
+    transpose_code = {
+        90: 'transpose=1',
+        180: 'transpose=1,transpose=1',
+        270: 'transpose=2'
+    }.get(rotation, None)
+
+    if transpose_code is None:
+        return input_file
+
+    # Create corrected temp file
+    corrected_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+
+    # Apply rotation fix
+    ffmpeg.input(input_file).output(
+        corrected_path, vf=transpose_code, metadata='rotate=0', vcodec='libx264'
+    ).run(overwrite_output=True)
+
+    return corrected_path
+
 # Store previous class index per person
 smoothers = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
@@ -174,7 +210,8 @@ if uploaded_file is not None:
         frame_count=0
         if st.button("Process Video"):
             with st.spinner("Processing..."):
-                cap = cv2.VideoCapture(tfile.name)
+                input_path = fix_video_orientation(tfile.name)
+                cap = cv2.VideoCapture(input_path)
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
