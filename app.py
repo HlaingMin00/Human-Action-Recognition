@@ -87,7 +87,7 @@ def draw_action_summary(frame, num_people):
 last_class_index = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
 def har_on_person(image,keypoints,confidence_threshold=0.1):
-    global smoothers
+    global last_class_index
     h,w,_=image.shape
     num_people=0
     for i, person_data in enumerate(keypoints[0]):
@@ -151,8 +151,6 @@ if uploaded_file is not None:
         frame_count=0
         if st.button("Process Video"):
             with st.spinner("Processing..."):
-                r = get_video_rotation(tfile.name)
-                st.write(r)
                 cap = cv2.VideoCapture(tfile.name)
                 while cap.isOpened():
                     ret, frame = cap.read()
