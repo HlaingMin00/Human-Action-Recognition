@@ -119,14 +119,14 @@ def get_stable_action(i, current_index, required_repeats=6):
     return last_class_index[i]
 
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-def har_on_person(image,keypoints,confidence_threshold=0.2):
+def har_on_person(image,keypoints,confidence_threshold=0.3):
     global last_class_index
     h,w,_=image.shape
     num_people=0
     for i, person_data in enumerate(keypoints[0]):
         bbox = person_data[51:]
         conf = person_data[:51].reshape(17, 3)[:, 2]
-        if bbox[4] < confidence_threshold or np.mean(conf) < 0.1:
+        if bbox[4] < confidence_threshold or np.mean(conf) < 0.3:
             continue
         num_people += 1
         ymin = int(bbox[0] * h)
