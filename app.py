@@ -82,57 +82,9 @@ def draw_action_summary(frame, num_people):
     # Display number of people detected
     cv2.putText(frame, f"Person: {num_people}", (text_x, text_y),
                 cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), text_thickness, cv2.LINE_AA)
-    
-class TemporalSmoother:
-    def __init__(self):
-        self.last_class = None
-        self.candidate_class = None
-
-    def smooth(self, current_class):
-        if self.last_class is None:
-            self.last_class = current_class
-            return current_class
-
-        if current_class == self.last_class:
-            self.candidate_class = None
-            return self.last_class
-
-        if self.candidate_class is None:
-            self.candidate_class = current_class
-            return self.last_class
-
-        if current_class == self.candidate_class:
-            self.last_class = current_class
-            self.candidate_class = None
-            return current_class
-        else:
-            self.candidate_class = current_class
-            return self.last_class
-
-import ffmpeg
-
-def get_video_rotation(path):
-    """
-    Check if video has rotation metadata and return it.
-    Returns:
-        int: rotation angle (0 if not present)
-    """
-    try:
-        probe = ffmpeg.probe(path)
-        for stream in probe['streams']:
-            if stream['codec_type'] == 'video':
-                rotate_tag = stream.get('tags', {}).get('rotate')
-                if rotate_tag:
-                    print(f"Rotation metadata found: {rotate_tag}°")
-                    return int(rotate_tag)
-        print("No rotation metadata found.")
-        return 0
-    except Exception as e:
-        print(f"Error: {e}")
-        return 0
 
 # Store previous class index per person
-smoothers = {}
+last_class_index = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
 def har_on_person(image,keypoints,confidence_threshold=0.1):
     global smoothers
@@ -153,21 +105,22 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
 
-        # Use temporal smoother per person
-        if i not in smoothers:
-            smoothers[i] = TemporalSmoother()
-        smoothed_index = smoothers[i].smooth(current_index)
-        action_label = class_names[current_index]
-        
         box_height = ymax - ymin
         font_scale = max(0.7, min(3, box_height / 150))
         thickness = max(2, int(font_scale * 1.5))
         label_x = xmin
         label_y = max(ymin - 10, 15)
         label_pos = (label_x, label_y)
-
-        cv2.putText(image, action_label, label_pos,
-                        cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
+        
+        # Compare with previous index
+        if i not in last_class_index:
+            last_class_index[i] = current_index
+        elif last_class_index[i] != current_index:
+            cv2.putText(image,class_names[last_class_index[i], label_pos, cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
+            last_class_index[i] = current_index  # confirmed update
+        else:
+            cv2.putText(image, class_names[current_index], label_pos,
+                            cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
     draw_action_summary(image,num_people)
 
 # User upload
