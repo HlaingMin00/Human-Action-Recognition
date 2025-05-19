@@ -117,7 +117,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         if i not in last_class_index:
             last_class_index[i] = current_index
         elif last_class_index[i] != current_index:
-            cv2.putText(image,class_names[last_class_index[i], label_pos, cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
+            cv2.putText(image,class_names[last_class_index[i]], label_pos, cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
             last_class_index[i] = current_index  # confirmed update
         else:
             cv2.putText(image, class_names[current_index], label_pos,
