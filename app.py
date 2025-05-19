@@ -138,6 +138,11 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
 
+        box_h=ymax-ymin
+        font_scale=max(0.7,min(3,box_h/150)
+        thickness=max(2,int(font_scale*1.5))
+        label_pos=(xmin,max(ymin-10,15))
+        
         action_index = get_stable_action(i, current_index)
         label = class_names[action_index]
         cv2.putText(image, label, label_pos,
