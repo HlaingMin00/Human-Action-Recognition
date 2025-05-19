@@ -88,7 +88,7 @@ def draw_action_summary(frame, num_people):
 last_class_index = {}
 pending_class_index = {}
 repeat_count = {}
-def get_stable_action(i, current_index, required_repeats=4):
+def get_stable_action(i, current_index, required_repeats=3):
     """
     Handles action stability for a given person ID (i) based on current prediction.
     Returns the action index to display.
@@ -119,7 +119,7 @@ def get_stable_action(i, current_index, required_repeats=4):
     return last_class_index[i]
 
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-def har_on_person(image,keypoints,confidence_threshold=0.4):
+def har_on_person(image,keypoints,confidence_threshold=0.3):
     global last_class_index
     h,w,_=image.shape
     num_people=0
