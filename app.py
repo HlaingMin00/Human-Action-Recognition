@@ -88,7 +88,6 @@ def draw_action_summary(frame, num_people):
 last_class_index = {}
 pending_class_index = {}
 repeat_count = {}
-
 def get_stable_action(i, current_index, required_repeats=1):
     """
     Handles action stability for a given person ID (i) based on current prediction.
@@ -141,7 +140,7 @@ def har_on_person(image,keypoints,confidence_threshold=0.1):
 
         action_index = get_stable_action(i, current_index)
         label = class_names[action_index]
-            cv2.putText(image, label, label_pos,
+        cv2.putText(image, label, label_pos,
                             cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
     draw_action_summary(image,num_people)
 
