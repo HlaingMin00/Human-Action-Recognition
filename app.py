@@ -235,7 +235,6 @@ elif option == "Use Webcam":
             st.session_state.cap = cv2.VideoCapture(0)
             st.session_state.run = True
     
-    st.title("Real-Time HAR with Webcam")
     st.button("Start/Stop Webcam", on_click=toggle_webcam)
     FRAME_WINDOW = st.empty()
     
