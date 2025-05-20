@@ -219,11 +219,12 @@ if option == "Upload Image/Video":
 elif option == "Use Webcam":
     st.title("🎥 Real-Time HAR from Webcam")
 
+    # Define once
     if 'run' not in st.session_state:
         st.session_state.run = False
     if 'cap' not in st.session_state:
         st.session_state.cap = None
-
+    
     def toggle_webcam():
         if st.session_state.run:
             st.session_state.run = False
@@ -233,10 +234,11 @@ elif option == "Use Webcam":
         else:
             st.session_state.cap = cv2.VideoCapture(0)
             st.session_state.run = True
-
+    
+    st.title("Real-Time HAR with Webcam")
     st.button("Start/Stop Webcam", on_click=toggle_webcam)
     FRAME_WINDOW = st.empty()
-
+    
     if st.session_state.run and st.session_state.cap:
         cap = st.session_state.cap
         ret, frame = cap.read()
