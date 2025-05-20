@@ -153,29 +153,30 @@ def har_on_person(image,keypoints,confidence_threshold=0.3):
                             cv2.FONT_HERSHEY_SIMPLEX,font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
     draw_action_summary(image,num_people)
 
-option = st.radio("Choose input method", ["Upload Image/Video", "Use Webcam"])
+# User upload
+uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
 
-if option == "Upload Image/Video":
-    uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
+if uploaded_file is not None:
+    if uploaded_file.type.startswith("image"):
+        # Handle image input
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Uploaded Image")
 
-    if uploaded_file is not None:
-        if uploaded_file.type.startswith("image"):
-            image = Image.open(uploaded_file).convert("RGB")
-            st.image(image, caption="Uploaded Image")
+        # Convert image to tensor
+        image_np = np.array(image)
+        keypoints = detect_keypoints(tf.convert_to_tensor(image_np))
+        image_np = resize_with_pad(image_np)
+        har_on_person(image_np,keypoints)
+        st.image(image_np, caption="Multiperson Action Recognition")
 
-            image_np = np.array(image)
-            keypoints = detect_keypoints(tf.convert_to_tensor(image_np))
-            image_np = resize_with_pad(image_np)
-            har_on_person(image_np, keypoints)
-            st.image(image_np, caption="Multiperson Action Recognition")
+    elif uploaded_file.type.startswith("video"):
+        # Save uploaded video to a temp file
+        output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
+        writer = imageio.get_writer(output_path, fps=27, codec='libx264', quality=8)
 
-        elif uploaded_file.type.startswith("video"):
-            output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-            writer = imageio.get_writer(output_path, fps=27, codec='libx264', quality=8)
-
-            tfile = tempfile.NamedTemporaryFile(delete=False)
-            tfile.write(uploaded_file.read())
-
+        # Save uploaded video to a temp file
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile.write(uploaded_file.read())
         frame_count=0
         if st.button("Process Video"):
             with st.spinner("Processing..."):
@@ -215,99 +216,3 @@ if option == "Upload Image/Video":
                 for key in ["video_path", "video_ready"]:
                     st.session_state.pop(key, None)
                 st.rerun()
-
-elif option == "Use Webcam":
-    st.title("🎥 Real-Time HAR from Webcam")
-
-    # Define once
-    if 'run' not in st.session_state:
-        st.session_state.run = False
-    if 'cap' not in st.session_state:
-        st.session_state.cap = None
-    
-    def toggle_webcam():
-        if st.session_state.run:
-            st.session_state.run = False
-            if st.session_state.cap:
-                st.session_state.cap.release()
-                st.session_state.cap = None
-        else:
-            st.session_state.cap = cv2.VideoCapture(0)
-            st.session_state.run = True
-    
-    st.button("Start/Stop Webcam", on_click=toggle_webcam)
-    FRAME_WINDOW = st.empty()
-    
-    if st.session_state.run and st.session_state.cap:
-        cap = st.session_state.cap
-        ret, frame = cap.read()
-        if ret:
-            image_rgb = resize_with_pad(frame)
-            image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
-            keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-            har_on_person(image_rgb, keypoints)
-            FRAME_WINDOW.image(image_rgb)
-            
-# # User upload
-# uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
-
-# if uploaded_file is not None:
-#     if uploaded_file.type.startswith("image"):
-#         # Handle image input
-#         image = Image.open(uploaded_file).convert("RGB")
-#         st.image(image, caption="Uploaded Image")
-
-#         # Convert image to tensor
-#         image_np = np.array(image)
-#         keypoints = detect_keypoints(tf.convert_to_tensor(image_np))
-#         image_np = resize_with_pad(image_np)
-#         har_on_person(image_np,keypoints)
-#         st.image(image_np, caption="Multiperson Action Recognition")
-
-#     elif uploaded_file.type.startswith("video"):
-#         # Save uploaded video to a temp file
-#         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
-#         writer = imageio.get_writer(output_path, fps=27, codec='libx264', quality=8)
-
-#         # Save uploaded video to a temp file
-#         tfile = tempfile.NamedTemporaryFile(delete=False)
-#         tfile.write(uploaded_file.read())
-#         frame_count=0
-#         if st.button("Process Video"):
-#             with st.spinner("Processing..."):
-#                 cap = cv2.VideoCapture(tfile.name)
-#                 while cap.isOpened():
-#                     ret, frame = cap.read()
-#                     if not ret:
-#                         break
-#                     frame_count=+1
-#                     if frame_count % 2 != 0:
-#                         image_rgb= np.array(frame)
-#                         image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
-#                         keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-#                         image_rgb = resize_with_pad(image_rgb)
-#                         har_on_person(image_rgb,keypoints)
-#                         writer.append_data(image_rgb)
-#                 cap.release()
-#                 writer.close()
-#                 if output_path:
-#                     st.session_state.video_path = output_path
-#                     st.session_state.video_ready = True
-#                 else:
-#                     st.error("Failed to process video.")
-    
-#         # Show the video if it's ready
-#         if st.session_state.get("video_ready") and "video_path" in st.session_state:
-#             st.success("Video created!")
-#             with open(st.session_state.video_path, "rb") as f:
-#                 st.video(f.read(), format="video/mp4")
-    
-#             # Button to clear everything and reset
-#             if st.button("🧹 Clear Everything"):
-#                 try:
-#                     os.remove(st.session_state.output_path)
-#                 except Exception as e:
-#                     st.warning(f"Could not remove file: {e}")
-#                 for key in ["video_path", "video_ready"]:
-#                     st.session_state.pop(key, None)
-#                 st.rerun()
