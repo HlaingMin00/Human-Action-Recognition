@@ -209,21 +209,19 @@ if uploaded_file is not None:
                     ret, frame = cap.read()
                     if not ret:
                         break
-                    frame_count+=1
-                    if frame_count % 2 != 0:
-                        image_rgb= np.array(frame)
-                        image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
-                        keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-                        image = resize_with_pad(image_rgb)
-                        har_on_person(image,keypoints)
-                        writer.append_data(image)
-                cap.release()
-                writer.close()
-                if output_path:
-                    st.session_state.video_path = output_path
-                    st.session_state.video_ready = True
-                else:
-                    st.error("Failed to process video.")
+                    image_rgb= np.array(frame)
+                    image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
+                    keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
+                    image = resize_with_pad(image_rgb)
+                    har_on_person(image,keypoints)
+                    writer.append_data(image)
+            cap.release()
+            writer.close()
+            if output_path:
+                st.session_state.video_path = output_path
+                st.session_state.video_ready = True
+            else:
+                st.error("Failed to process video.")
     
         # Show the video if it's ready
         if st.session_state.get("video_ready") and "video_path" in st.session_state:
