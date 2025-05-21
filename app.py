@@ -133,7 +133,8 @@ current_frame_index = 0  # global frame counter
 ID_TIMEOUT = 30          # frames before we forget the person
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
 def har_on_person(image, keypoints, confidence_threshold=0.1):
-    global last_class_index, person_tracker, next_person_id, last_seen, current_frame_index
+    global last_class_index, person_tracker, next_person_id
+    global last_seen, current_frame_index, ID_TIMEOUT
     h, w, _ = image.shape
     num_people = 0
     new_tracker = {}
@@ -161,7 +162,7 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
             next_person_id += 1
 
         new_tracker[matched_id] = current_box
-        last_seen[matched_id] = current_frame_index  # 🟢 Update last seen frame
+        last_seen[matched_id] = current_frame_index  # 🔁 track last seen frame
 
         cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
         model_input = person_data[:51].reshape(17, 3)[:, :2].flatten().reshape(1, 34)
@@ -180,7 +181,7 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
 
     person_tracker = new_tracker
 
-    # 🔴 Remove stale IDs that haven't been seen for ID_TIMEOUT frames
+    # 🔥 Remove stale IDs
     stale_ids = [pid for pid, last in last_seen.items()
                  if current_frame_index - last > ID_TIMEOUT]
 
@@ -190,6 +191,10 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
         last_class_index.pop(pid, None)
         pending_class_index.pop(pid, None)
         repeat_count.pop(pid, None)
+
+    # 🧼 If no one is tracked anymore, reset ID counter
+    if not person_tracker:
+        next_person_id = 0
 
     draw_action_summary(image, num_people)
 
@@ -221,11 +226,13 @@ if uploaded_file is not None:
         frame_count=0
         if st.button("Process Video"):
             with st.spinner("Processing..."):
+                global current_frame_index  # Ensure you're updating this global
                 cap = cv2.VideoCapture(tfile.name)
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
                         break
+                    current_frame_index += 1  # ✅ Needed for ID timeout logic
                     image_rgb= np.array(frame)
                     image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
                     keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
