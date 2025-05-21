@@ -227,7 +227,7 @@ if uploaded_file is not None:
         if st.button("Process Video"):
             with st.spinner("Processing..."):
                 cap = cv2.VideoCapture(tfile.name)
-                global current_frame_index  # ✅ Declare BEFORE use
+                # global current_frame_index  # ✅ Declare BEFORE use
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
