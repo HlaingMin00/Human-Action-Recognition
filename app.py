@@ -216,7 +216,6 @@ if uploaded_file is not None:
         st.image(image_np, caption="Multiperson Action Recognition")
 
     elif uploaded_file.type.startswith("video"):
-        global current_frame_index  # Ensure you're updating this global
         # Save uploaded video to a temp file
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4').name
         writer = imageio.get_writer(output_path, fps=27, codec='libx264', quality=8)
@@ -226,6 +225,7 @@ if uploaded_file is not None:
         tfile.write(uploaded_file.read())
         frame_count=0
         if st.button("Process Video"):
+            global current_frame_index  # ✅ Declare BEFORE use
             with st.spinner("Processing..."):
                 cap = cv2.VideoCapture(tfile.name)
                 while cap.isOpened():
