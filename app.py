@@ -170,7 +170,7 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
         label_y = max(ymin - 10, 15)
         label_pos = (label_x, label_y)
         action_index = get_stable_action(matched_id, current_index)
-        label = class_names[action_index]
+        label = f"ID:{matched_id} {class_names[action_index]}"
         cv2.putText(image, label, label_pos,
                     cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
 
@@ -209,14 +209,14 @@ if uploaded_file is not None:
                     ret, frame = cap.read()
                     if not ret:
                         break
-                    frame_count=+1
                     if frame_count % 2 != 0:
                         image_rgb= np.array(frame)
                         image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
                         keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-                        image_rgb = resize_with_pad(image_rgb)
-                        har_on_person(image_rgb,keypoints)
-                        writer.append_data(image_rgb)
+                        image = resize_with_pad(image_rgb)
+                        har_on_person(image,keypoints)
+                        writer.append_data(image)
+                        frame_count+=1
                 cap.release()
                 writer.close()
                 if output_path:
