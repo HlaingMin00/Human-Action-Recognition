@@ -104,7 +104,7 @@ def get_iou(boxA, boxB):
     iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
     return iou
 
-def get_stable_action(i, current_index, required_repeats=3):
+def get_stable_action(i, current_index, required_repeats=5):
     """Handles action stability for a given person ID (i) based on current prediction."""
     if i not in last_class_index:
         last_class_index[i] = current_index
