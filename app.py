@@ -104,7 +104,7 @@ def get_iou(boxA, boxB):
     iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
     return iou
 
-def get_stable_action(i, current_index, required_repeats=3):
+def get_stable_action(i, current_index, required_repeats=5):
     """Handles action stability for a given person ID (i) based on current prediction."""
     if i not in last_class_index:
         last_class_index[i] = current_index
@@ -164,7 +164,7 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
         box_height = ymax - ymin
-        font_scale = max(0.7, min(3, box_height / 150))
+        font_scale = max(0.7, min(2, box_height / 150))
         thickness = max(2, int(font_scale * 1.5))
         label_x = xmin
         label_y = max(ymin - 10, 15)
