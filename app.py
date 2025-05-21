@@ -128,10 +128,12 @@ def get_stable_action(i, current_index, required_repeats=5):
     repeat_count[i] = 1
     return last_class_index[i]
 
+last_seen = {}           # ID → last frame it was seen
+current_frame_index = 0  # global frame counter
+ID_TIMEOUT = 30          # frames before we forget the person
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-
 def har_on_person(image, keypoints, confidence_threshold=0.1):
-    global last_class_index, person_tracker, next_person_id
+    global last_class_index, person_tracker, next_person_id, last_seen, current_frame_index
     h, w, _ = image.shape
     num_people = 0
     new_tracker = {}
@@ -157,14 +159,16 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
         if matched_id is None:
             matched_id = next_person_id
             next_person_id += 1
+
         new_tracker[matched_id] = current_box
+        last_seen[matched_id] = current_frame_index  # 🟢 Update last seen frame
 
         cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
         model_input = person_data[:51].reshape(17, 3)[:, :2].flatten().reshape(1, 34)
         prediction = har_model.predict(model_input)
         current_index = int(np.argmax(prediction))
         box_height = ymax - ymin
-        font_scale = max(0.7, min(2, box_height / 175))
+        font_scale = max(0.7, min(3, box_height / 150))
         thickness = max(2, int(font_scale * 1.5))
         label_x = xmin
         label_y = max(ymin - 10, 15)
@@ -175,7 +179,20 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
                     cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
 
     person_tracker = new_tracker
+
+    # 🔴 Remove stale IDs that haven't been seen for ID_TIMEOUT frames
+    stale_ids = [pid for pid, last in last_seen.items()
+                 if current_frame_index - last > ID_TIMEOUT]
+
+    for pid in stale_ids:
+        person_tracker.pop(pid, None)
+        last_seen.pop(pid, None)
+        last_class_index.pop(pid, None)
+        pending_class_index.pop(pid, None)
+        repeat_count.pop(pid, None)
+
     draw_action_summary(image, num_people)
+
 
 # User upload
 uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
