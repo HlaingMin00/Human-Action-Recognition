@@ -234,11 +234,12 @@ if uploaded_file is not None:
             if st.button("🧹 Clear Everything"):
                 try:
                     os.remove(st.session_state.output_path)
+                    break
                 except Exception as e:
                     st.warning(f"Could not remove file: {e}")
                 for key in ["video_path", "video_ready"]:
                     st.session_state.pop(key, None)
-                break
+
                 # st.rerun()
 
 st.markdown(
