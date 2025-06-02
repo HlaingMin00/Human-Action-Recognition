@@ -203,26 +203,26 @@ if uploaded_file is not None:
         tfile = tempfile.NamedTemporaryFile(delete=False)
         tfile.write(uploaded_file.read())
         frame_count=0
-        # if st.button("Process Video"):
-        with st.spinner("Processing..."):
-            cap = cv2.VideoCapture(tfile.name)
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                image_rgb= np.array(frame)
-                image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
-                keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-                image = resize_with_pad(image_rgb)
-                har_on_person(image,keypoints)
-                writer.append_data(image)
-        cap.release()
-        writer.close()
-        if output_path:
-            st.session_state.video_path = output_path
-            st.session_state.video_ready = True
-        else:
-            st.error("Failed to process video.")
+        if st.button("Process Video"):
+            with st.spinner("Processing..."):
+                cap = cv2.VideoCapture(tfile.name)
+                while cap.isOpened():
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    image_rgb= np.array(frame)
+                    image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
+                    keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
+                    image = resize_with_pad(image_rgb)
+                    har_on_person(image,keypoints)
+                    writer.append_data(image)
+            cap.release()
+            writer.close()
+            if output_path:
+                st.session_state.video_path = output_path
+                st.session_state.video_ready = True
+            else:
+                st.error("Failed to process video.")
     
         # Show the video if it's ready
         if st.session_state.get("video_ready") and "video_path" in st.session_state:
@@ -239,8 +239,7 @@ if uploaded_file is not None:
                     st.warning(f"Could not remove file: {e}")
                 for key in ["video_path", "video_ready"]:
                     st.session_state.pop(key, None)
-
-                # st.rerun()
+                st.rerun()
 
 st.markdown(
     """
