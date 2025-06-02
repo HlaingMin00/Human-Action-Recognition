@@ -238,6 +238,7 @@ if uploaded_file is not None:
                     st.warning(f"Could not remove file: {e}")
                 for key in ["video_path", "video_ready"]:
                     st.session_state.pop(key, None)
+                break
                 # st.rerun()
 
 st.markdown(
