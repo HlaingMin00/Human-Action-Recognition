@@ -19,7 +19,7 @@ def load_models():
     movenet_model = movenet.signatures['serving_default']
     
     # Load custom HAR model
-    har_model = tf.keras.models.load_model("CNN+LSTM_002.h5")
+    har_model = tf.keras.models.load_model("CNN+LSTM_003.h5")
     return movenet_model, har_model
 
 movenet_model, har_model = load_models()
@@ -177,6 +177,16 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
     person_tracker = new_tracker
     draw_action_summary(image, num_people)
 
+st.markdown(
+    """
+    <a href="https://huggingface.co/spaces/hlaingmin00/har-gradio-demo" target="_blank">
+        <button style='padding:10px 20px;font-size:16px;background-color:#4CAF50;color:white;border:none;border-radius:5px;'>
+            Real time Multi-person Human Action Recognition
+        </button>
+    </a>
+    """,
+    unsafe_allow_html=True
+)
 
 # User upload
 uploaded_file = st.file_uploader("📷 Upload an image or video", type=["jpg", "png", "mp4", "mov"])
@@ -239,15 +249,4 @@ if uploaded_file is not None:
                 for key in ["video_path", "video_ready"]:
                     st.session_state.pop(key, None)
             st.rerun()
-
-st.markdown(
-    """
-    <a href="https://huggingface.co/spaces/hlaingmin00/har-gradio-demo" target="_blank">
-        <button style='padding:10px 20px;font-size:16px;background-color:#4CAF50;color:white;border:none;border-radius:5px;'>
-            Real time Multi-person Human Action Recognition
-        </button>
-    </a>
-    """,
-    unsafe_allow_html=True
-)
 
