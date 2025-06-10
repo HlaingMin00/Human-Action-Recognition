@@ -19,7 +19,7 @@ def load_models():
     movenet_model = movenet.signatures['serving_default']
     
     # Load custom HAR model
-    har_model = tf.keras.models.load_model("CNN+LSTM_001.h5")
+    har_model = tf.keras.models.load_model("CNN+LSTM_003.h5")
     return movenet_model, har_model
 
 movenet_model, har_model = load_models()
@@ -101,7 +101,7 @@ def get_iou(boxA, boxB):
     iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
     return iou
 
-def get_stable_action(i, current_index, required_repeats=4):
+def get_stable_action(i, current_index, required_repeats=5):
     """Handles action stability for a given person ID (i) based on current prediction."""
     if i not in last_class_index:
         last_class_index[i] = current_index
