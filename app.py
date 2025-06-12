@@ -10,7 +10,7 @@ import os
 import ffmpeg
 
 st.title("Human Action Recognition System using MoveNet + HAR Model")
-st.subtitle("Action Available : [Standing, Walking, Running, Sitting ,Falling]")
+st.header("Action Available : [Standing, Walking, Running, Sitting ,Falling]")
 # Load models only once
 @st.cache_resource
 def load_models():
