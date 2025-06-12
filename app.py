@@ -178,17 +178,6 @@ def har_on_person(image, keypoints, confidence_threshold=0.1):
     person_tracker = new_tracker
     draw_action_summary(image, num_people)
 
-# st.markdown(
-#     """
-#     <a href="https://huggingface.co/spaces/hlaingmin00/har-gradio-demo" target="_blank">
-#         <button style='padding:10px 20px;font-size:16px;background-color:#4CAF50;color:white;border:none;border-radius:5px;'>
-#             Real time Multi-person Human Action Recognition
-#         </button>
-#     </a>
-#     """,
-#     unsafe_allow_html=True
-# )
-
 st.markdown(
     """
     <a href="https://huggingface.co/spaces/hlaingmin00/har-gradio-gpu">
