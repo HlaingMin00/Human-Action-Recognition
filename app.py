@@ -129,7 +129,7 @@ def get_stable_action(i, current_index, required_repeats=4):
 current_frame_index =0
 last_seen = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-def har_on_person(image, keypoints, confidence_threshold=0.3):
+def har_on_person(image, keypoints, confidence_threshold=0.1):
     global last_class_index, person_tracker, next_person_id,current_frame_index,last_seen
     h, w, _ = image.shape
     num_people = 0
