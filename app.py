@@ -9,8 +9,8 @@ import imageio
 import os
 import ffmpeg
 
-st.title("🧍‍♂️ Human Action Recognition with MoveNet + HAR Model")
-
+st.title("Human Action Recognition System using MoveNet + HAR Model")
+st.subtitle("Action Available : [Standing, Walking, Running, Sitting ,Falling]")
 # Load models only once
 @st.cache_resource
 def load_models():
@@ -102,7 +102,7 @@ def get_iou(boxA, boxB):
     iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
     return iou
 
-def get_stable_action(i, current_index, required_repeats=5):
+def get_stable_action(i, current_index, required_repeats=4):
     """Handles action stability for a given person ID (i) based on current prediction."""
     if i not in last_class_index:
         last_class_index[i] = current_index
@@ -129,7 +129,7 @@ def get_stable_action(i, current_index, required_repeats=5):
 current_frame_index =0
 last_seen = {}
 class_names = ["Standing", "Walking", "Running", "Sitting", "Falling"]
-def har_on_person(image, keypoints, confidence_threshold=0.1):
+def har_on_person(image, keypoints, confidence_threshold=0.3):
     global last_class_index, person_tracker, next_person_id,current_frame_index,last_seen
     h, w, _ = image.shape
     num_people = 0
