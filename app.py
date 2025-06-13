@@ -24,29 +24,29 @@ def load_models():
 
 movenet_model, har_model = load_models()
 
-# def resize_with_pad(image, target_size=512, pad_color=(255, 255, 255)):
-#     h, w = image.shape[:2]
-#     scale = target_size / max(h, w)
+def resize_with_pad(image, target_size=512, pad_color=(255, 255, 255)):
+    h, w = image.shape[:2]
+    scale = target_size / max(h, w)
 
-#     new_w, new_h = int(w * scale), int(h * scale)
-#     resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    new_w, new_h = int(w * scale), int(h * scale)
+    resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
-#     # Padding calculations
-#     delta_w = target_size - new_w
-#     delta_h = target_size - new_h
-#     top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-#     left, right = delta_w // 2, delta_w - (delta_w // 2)
+    # Padding calculations
+    delta_w = target_size - new_w
+    delta_h = target_size - new_h
+    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+    left, right = delta_w // 2, delta_w - (delta_w // 2)
 
-#     # Pad and return
-#     padded_image = cv2.copyMakeBorder(
-#         resized, top, bottom, left, right,
-#         cv2.BORDER_CONSTANT, value=pad_color
-#     )
-#     return padded_image
+    # Pad and return
+    padded_image = cv2.copyMakeBorder(
+        resized, top, bottom, left, right,
+        cv2.BORDER_CONSTANT, value=pad_color
+    )
+    return padded_image
 
 # Helper to run MoveNet
 def detect_keypoints(image):
-    input_img = tf.image.resize_with_pad(image, 512, 512)
+    input_img = tf.image.resize_with_pad(image, 256, 256)
     input_img = tf.cast(input_img, dtype=tf.int32)
     input_img = tf.expand_dims(input_img, axis=0)
 
@@ -201,9 +201,9 @@ if uploaded_file is not None:
         # Convert image to tensor
         image_np = np.array(image)
         img,keypoints = detect_keypoints(tf.convert_to_tensor(image_np))
-        # image_np = resize_with_pad(image_np)
-        har_on_person(img,keypoints)
-        st.image(img, caption="Multiperson Action Recognition")
+        image_np = resize_with_pad(image_np)
+        har_on_person(image_np,keypoints)
+        st.image(image_np, caption="Multiperson Action Recognition")
 
     elif uploaded_file.type.startswith("video"):
         # Save uploaded video to a temp file
@@ -224,9 +224,9 @@ if uploaded_file is not None:
                     image_rgb= np.array(frame)
                     image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB)
                     img,keypoints = detect_keypoints(tf.convert_to_tensor(image_rgb))
-                    # image = resize_with_pad(image_rgb)
-                    har_on_person(img,keypoints)
-                    writer.append_data(img)
+                    image = resize_with_pad(image_rgb)
+                    har_on_person(image,keypoints)
+                    writer.append_data(image)
             cap.release()
             writer.close()
             if output_path:
