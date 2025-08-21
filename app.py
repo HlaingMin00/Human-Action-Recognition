@@ -19,7 +19,7 @@ def load_models():
     movenet_model = movenet.signatures['serving_default']
     
     # Load custom HAR model
-    har_model = tf.keras.models.load_model("CNN+LSTM_003.h5")
+    har_model = tf.keras.models.load_model("harCNN+LSTM_3.h5")
     return movenet_model, har_model
 
 movenet_model, har_model = load_models()
