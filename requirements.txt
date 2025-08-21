@@ -1,7 +1,8 @@
 streamlit
 tensorflow
 tensorflow-hub
-numpy pandas
+numpy
+pandas
 scikit-learn
 imageio
 imageio[ffmpeg]
