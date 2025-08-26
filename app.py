@@ -9,7 +9,7 @@ import imageio
 import os
 import ffmpeg
 
-st.title("Human Action Recognition System using MoveNet + HAR Model")
+st.title("Multi-person Pose Estimation and Action Recognition Using Deep Learning")
 st.text("Action Available : [Standing, Walking, Running, Sitting ,Falling]")
 # Load models only once
 @st.cache_resource
