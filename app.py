@@ -55,6 +55,68 @@ def detect_keypoints(image):
     img = input_img[0].numpy().astype("uint8")
     return img,keypoints
 
+EDGES = {
+    (0, 1): 'm',
+    (0, 2): 'c',
+    (1, 3): 'm',
+    (2, 4): 'c',
+    (0, 5): 'm',
+    (0, 6): 'c',
+    (5, 7): 'm',
+    (7, 9): 'm',
+    (6, 8): 'c',
+    (8, 10): 'c',
+    (5, 6): 'y',
+    (5, 11): 'm',
+    (6, 12): 'c',
+    (11, 12): 'y',
+    (11, 13): 'm',
+    (13, 15): 'm',
+    (12, 14): 'c',
+    (14, 16): 'c'
+}
+
+def draw_keypoints(frame, keypoints, confidence_threshold):
+    h, w, _ = frame.shape
+    shaped = np.multiply(keypoints, [h, w, 1])
+
+    # Dynamically scale radius based on image resolution
+    radius = max(1, int(min(h, w) / 128))  # Tune the divisor for your preferred size
+
+    for kp in shaped:
+        y, x, conf = kp
+        if conf > confidence_threshold:
+            cv2.circle(frame, (int(x), int(y)), radius, (0, 255, 0), -1)
+
+
+def draw_connections(frame, keypoints, edges, confidence_threshold):
+    h, w, _ = frame.shape
+    shaped = np.multiply(keypoints, [h, w, 1])
+
+    # Dynamically scale line thickness based on image size
+    relative_thickness = max(1, int(min(h, w) / 256))  # Adjust scaling base if needed
+
+    for edge, color in edges.items():
+        p1, p2 = edge
+        y1, x1, c1 = shaped[p1]
+        y2, x2, c2 = shaped[p2]
+
+        if c1 > confidence_threshold and c2 > confidence_threshold:
+            cv2.line(frame,
+                     (int(x1), int(y1)),
+                     (int(x2), int(y2)),
+                     (0, 0, 255),  # You can use color map here if desired
+                     thickness=relative_thickness)
+
+# Define action-to-color mapping (BGR for OpenCV)
+ACTION_COLORS = {
+    0: (0, 255, 0),      # Green → Standing
+    1: (255, 0 , 0),    # Brown → Walking (BGR approx)
+    2: (255, 255, 255),      # Blue → Running
+    3: (255, 255, 0),    # Purple → Sitting
+    4: (0, 0, 255),      # Red → Falling
+}
+
 def draw_action_summary(frame, num_people):
     frame_height, frame_width, _ = frame.shape  # Get frame dimensions
 
@@ -137,6 +199,7 @@ def har_on_person(image, keypoints, confidence_threshold=0.2):
 
     for i, person_data in enumerate(keypoints[0]):
         bbox = person_data[51:]
+        person = person_data[:51].reshape(17, 3)
         conf = person_data[:51].reshape(17, 3)[:, 2]
         if bbox[4] < confidence_threshold or np.mean(conf) < 0.1:
             continue
@@ -160,21 +223,31 @@ def har_on_person(image, keypoints, confidence_threshold=0.2):
         new_tracker[matched_id] = current_box
         last_seen[matched_id] = current_frame_index  # 🔁 track last seen frame
 
-        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
+
+        draw_connections(image,person, EDGES,confidence_threshold )
+        draw_keypoints(image,person, confidence_threshold)
+
+        # Default color (green) if no prediction yet
+        color = (0, 255, 0)
+        score = None
+
         model_input = person_data[:51].reshape(17, 3)[:, :2].flatten().reshape(1, 34)
-        prediction = har_model.predict(model_input)
+        prediction = har_model.predict(model_input)[0]
         current_index = int(np.argmax(prediction))
-        # st.write(class_names[current_index])
+        score = float(prediction[current_index])  # confidence score
+        color = ACTION_COLORS.get(current_index, (255, 255, 255))
         box_height = ymax - ymin
         font_scale = max(0.7, min(1, box_height / 150))
         thickness = max(2, int(font_scale * 1.5))
         label_x = xmin
         label_y = max(ymin - 10, 15)
         label_pos = (label_x, label_y)
+        cv2.rectangle(image, (xmin, ymin), (xmax, ymax),color, 2)
         action_index = get_stable_action(matched_id, current_index)
-        label = f"{class_names[action_index]}" #Person:{matched_id} ,for person tracking prove
+        #label = f"{class_names[action_index]}" # to prove person tracking ID:{matched_id} 
+        label = f"{class_names[current_index]} {score:.2f}"  
         cv2.putText(image, label, label_pos,
-                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), thickness, lineType=cv2.LINE_AA)
+                    cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness, lineType=cv2.LINE_AA)
 
     person_tracker = new_tracker
     draw_action_summary(image, num_people)
