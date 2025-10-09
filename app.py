@@ -9,7 +9,7 @@ import imageio
 import os
 import ffmpeg
 
-st.title("Multi-person Pose Estimation and Action Classification Using Deep Learning")
+st.title("Multi-person Pose Estimation and Activity Recognition Using Deep Learning")
 st.text("Action Available : [Standing, Walking, Running, Sitting ,Falling]")
 # Load models only once
 @st.cache_resource
